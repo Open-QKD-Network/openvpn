@@ -60,6 +60,8 @@
 #include <openssl/ec.h>
 #endif
 
+#include "openqkd/openqkd.h"
+
 /*
  * Allocate space in SSL objects in which to store a struct tls_session
  * pointer back to parent.
@@ -1690,6 +1692,40 @@ bio_read(BIO *bio, struct buffer *buf, int maxlen, const char *desc)
     return ret;
 }
 
+static int oqkd_new_key_url_callback(char** url, int *len) {
+    if (oqkd_get_new_key_url(url) == 0) {
+        msg(D_TLS_DEBUG_LOW, "oqkd_new_key_url is:%s", *url);
+        *len = strlen(*url);
+        return 0;
+    } else {
+        msg(D_TLS_DEBUG_LOW, "oqkd_new_key_url fails!");
+        return -1;
+    }
+}
+
+/*new_key_url is zero terminated, get_key_url is also zero terminated, key is NOT zero terminated*/
+static int oqkd_new_key_callback(char* new_key_url, char** key, int *key_len, char** get_key_url) {
+    // call openQKD to get new key with new_key_url
+    if (oqkd_new_key(new_key_url, key, key_len, get_key_url) == 0) {
+        msg(D_TLS_DEBUG_LOW, "oqkd_new_key succeeds, key_len:%d, get_key_url:%s", *key_len, *get_key_url);
+        return 0;
+    } else {
+        msg(D_TLS_DEBUG_LOW, "oqkd_new_key fails!");
+        return -1;
+    }
+}
+
+/*get_key_url is zero terminated*/
+static int oqkd_get_key_callback(char* get_key_url, char** key, int *key_len) {
+   if (oqkd_get_key(get_key_url, key, key_len) == 0) {
+       msg(D_TLS_DEBUG_LOW, "oqkd_get_key succeeds, key_len:%d", *key_len);
+       return 0;
+   } else {
+       msg(D_TLS_DEBUG_LOW, "oqkd_get_key fails!");
+       return -1;
+   }
+}
+
 void
 key_state_ssl_init(struct key_state_ssl *ks_ssl, const struct tls_root_ctx *ssl_ctx, bool is_server, struct tls_session *session)
 {
@@ -1703,6 +1739,15 @@ key_state_ssl_init(struct key_state_ssl *ks_ssl, const struct tls_root_ctx *ssl_
         crypto_msg(M_FATAL, "SSL_new failed");
     }
 
+    msg(D_TLS_DEBUG_LOW, "Calling SSL_new server %d", is_server);
+    if (!is_server) {
+        SSL_set_oqkd_new_key_url_callback(ks_ssl->ssl, oqkd_new_key_url_callback);
+        SSL_set_oqkd_get_key_callback(ks_ssl->ssl, oqkd_get_key_callback);
+    }
+    else
+    {
+        SSL_set_oqkd_new_key_callback(ks_ssl->ssl, oqkd_new_key_callback);
+    }
     /* put session * in ssl object so we can access it
      * from verify callback*/
     SSL_set_ex_data(ks_ssl->ssl, mydata_index, session);
