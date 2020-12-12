@@ -88,7 +88,7 @@ git checkout pqcrypto
 
 3.2 Run openvpn
 
-# change to root
+#change to root
 sudo -s
 
 cd qkd-test
@@ -106,7 +106,7 @@ root@ASUS-B43S:~/qkd-test# ldd stage-openqkd/usr/local/openvpn/sbin/openvpn  | g
 tls-version-min 1.3
 ecdh-curve p384_oqkd_saber
 
-# On server machine
+#On server machine
 ./stage-openqkd/usr/local/openvpn/sbin/openvpn --config ./openssl/openqkd/openvpn-config/server-config/server.conf 
 
 #On client machine
