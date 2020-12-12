@@ -104,11 +104,14 @@ root@ASUS-B43S:~/qkd-test# ldd stage-openqkd/usr/local/openvpn/sbin/openvpn  | g
 #make sure server.conf/client.conf use openquantumsafe/openqkd key exchange
 
 tls-version-min 1.3
+
 ecdh-curve p384_oqkd_saber
 
 #On server machine
+
 ./stage-openqkd/usr/local/openvpn/sbin/openvpn --config ./openssl/openqkd/openvpn-config/server-config/server.conf 
 
 #On client machine
+
 ./stage-openqkd/usr/local/openvpn/sbin/openvpn --config ./openssl/openqkd/openvpn-config/client-config/client.conf
 
